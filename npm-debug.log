@@ -1,0 +1,87 @@
+0 info it worked if it ends with ok
+1 verbose cli [ 'C:\\Program Files\\nodejs\\node.exe',
+1 verbose cli   'C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js',
+1 verbose cli   'install',
+1 verbose cli   '-g',
+1 verbose cli   'polymer-cli' ]
+2 info using npm@3.9.5
+3 info using node@v6.2.2
+4 silly loadCurrentTree Starting
+5 silly install loadCurrentTree
+6 silly install readGlobalPackageData
+7 silly fetchPackageMetaData polymer-cli
+8 silly fetchNamedPackageData polymer-cli
+9 silly mapToRegistry name polymer-cli
+10 silly mapToRegistry using default registry
+11 silly mapToRegistry registry https://registry.npmjs.org/
+12 silly mapToRegistry data Result {
+12 silly mapToRegistry   raw: 'polymer-cli',
+12 silly mapToRegistry   scope: null,
+12 silly mapToRegistry   name: 'polymer-cli',
+12 silly mapToRegistry   rawSpec: '',
+12 silly mapToRegistry   spec: 'latest',
+12 silly mapToRegistry   type: 'tag' }
+13 silly mapToRegistry uri https://registry.npmjs.org/polymer-cli
+14 verbose request uri https://registry.npmjs.org/polymer-cli
+15 verbose request no auth needed
+16 info attempt registry request try #1 at 1:07:29 AM
+17 verbose request id d00578a1b8d749d7
+18 http request GET https://registry.npmjs.org/polymer-cli
+19 info retry will retry, error on last attempt: Error: tunneling socket could not be established, cause=connect ECONNREFUSED 127.0.0.1:80
+20 info attempt registry request try #2 at 1:07:40 AM
+21 http request GET https://registry.npmjs.org/polymer-cli
+22 info retry will retry, error on last attempt: Error: tunneling socket could not be established, cause=connect ECONNREFUSED 127.0.0.1:80
+23 info attempt registry request try #3 at 1:08:41 AM
+24 http request GET https://registry.npmjs.org/polymer-cli
+25 silly fetchPackageMetaData Error: tunneling socket could not be established, cause=connect ECONNREFUSED 127.0.0.1:80
+25 silly fetchPackageMetaData     at ClientRequest.onError (C:\Program Files\nodejs\node_modules\npm\node_modules\request\node_modules\tunnel-agent\index.js:176:17)
+25 silly fetchPackageMetaData     at ClientRequest.g (events.js:286:16)
+25 silly fetchPackageMetaData     at emitOne (events.js:96:13)
+25 silly fetchPackageMetaData     at ClientRequest.emit (events.js:188:7)
+25 silly fetchPackageMetaData     at Socket.socketErrorListener (_http_client.js:308:9)
+25 silly fetchPackageMetaData     at emitOne (events.js:96:13)
+25 silly fetchPackageMetaData     at Socket.emit (events.js:188:7)
+25 silly fetchPackageMetaData     at emitErrorNT (net.js:1272:8)
+25 silly fetchPackageMetaData     at _combinedTickCallback (internal/process/next_tick.js:74:11)
+25 silly fetchPackageMetaData     at process._tickCallback (internal/process/next_tick.js:98:9)
+25 silly fetchPackageMetaData  error for polymer-cli { Error: tunneling socket could not be established, cause=connect ECONNREFUSED 127.0.0.1:80
+25 silly fetchPackageMetaData     at ClientRequest.onError (C:\Program Files\nodejs\node_modules\npm\node_modules\request\node_modules\tunnel-agent\index.js:176:17)
+25 silly fetchPackageMetaData     at ClientRequest.g (events.js:286:16)
+25 silly fetchPackageMetaData     at emitOne (events.js:96:13)
+25 silly fetchPackageMetaData     at ClientRequest.emit (events.js:188:7)
+25 silly fetchPackageMetaData     at Socket.socketErrorListener (_http_client.js:308:9)
+25 silly fetchPackageMetaData     at emitOne (events.js:96:13)
+25 silly fetchPackageMetaData     at Socket.emit (events.js:188:7)
+25 silly fetchPackageMetaData     at emitErrorNT (net.js:1272:8)
+25 silly fetchPackageMetaData     at _combinedTickCallback (internal/process/next_tick.js:74:11)
+25 silly fetchPackageMetaData     at process._tickCallback (internal/process/next_tick.js:98:9) code: 'ECONNRESET' }
+26 silly rollbackFailedOptional Starting
+27 silly rollbackFailedOptional Finishing
+28 silly runTopLevelLifecycles Starting
+29 silly runTopLevelLifecycles Finishing
+30 silly install printInstalled
+31 verbose stack Error: tunneling socket could not be established, cause=connect ECONNREFUSED 127.0.0.1:80
+31 verbose stack     at ClientRequest.onError (C:\Program Files\nodejs\node_modules\npm\node_modules\request\node_modules\tunnel-agent\index.js:176:17)
+31 verbose stack     at ClientRequest.g (events.js:286:16)
+31 verbose stack     at emitOne (events.js:96:13)
+31 verbose stack     at ClientRequest.emit (events.js:188:7)
+31 verbose stack     at Socket.socketErrorListener (_http_client.js:308:9)
+31 verbose stack     at emitOne (events.js:96:13)
+31 verbose stack     at Socket.emit (events.js:188:7)
+31 verbose stack     at emitErrorNT (net.js:1272:8)
+31 verbose stack     at _combinedTickCallback (internal/process/next_tick.js:74:11)
+31 verbose stack     at process._tickCallback (internal/process/next_tick.js:98:9)
+32 verbose cwd D:\Webservice\notepad.cc
+33 error Windows_NT 10.0.14393
+34 error argv "C:\\Program Files\\nodejs\\node.exe" "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js" "install" "-g" "polymer-cli"
+35 error node v6.2.2
+36 error npm  v3.9.5
+37 error code ECONNRESET
+38 error network tunneling socket could not be established, cause=connect ECONNREFUSED 127.0.0.1:80
+39 error network This is most likely not a problem with npm itself
+39 error network and is related to network connectivity.
+39 error network In most cases you are behind a proxy or have bad network settings.
+39 error network
+39 error network If you are behind a proxy, please make sure that the
+39 error network 'proxy' config is set properly.  See: 'npm help config'
+40 verbose exit [ 1, true ]

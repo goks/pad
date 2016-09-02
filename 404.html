@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    (function(){
+      var redirect = sessionStorage.redirect;
+      delete sessionStorage.redirect;
+      if (redirect && redirect != location.href) {
+        history.replaceState(null, null, redirect);
+      }
+    })();
+  </script>
+  <script>
+  //sessionStorage.redirect = location.href;
+  </script>
+  <meta http-equiv="refresh" content="0;URL='/test.html'">
+
+
+
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0"/>
+  <title>Web-Pad | NotesShare</title>
+
+  <!-- CSS  -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="css/materialize.min.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+  <link href="css/style.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+  <style type="text/css">
+    textarea{
+      width: 100%;
+      height: 80vh;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/3.3.0/firebase.js"></script>
+</head>
+<body>
+  <nav class="teal darken-1" role="navigation">
+    <div class="nav-wrapper container"><a id="logo-container" href="#" class="brand-logo">Web-Pad</a>
+      <ul class="right hide-on-med-and-down">
+        <li><a onclick="readMessage()"> <i class="material-icons">refresh</i></a></li>
+      </ul>
+
+      <ul id="nav-mobile" class="side-nav">
+        <li><a href="#">Refresh</a></li>
+      </ul>
+      <a href="#" data-activates="nav-mobile" class="button-collapse"><i class="material-icons">menu</i></a>
+    </div>
+  </nav>
+  <div class="section no-pad-bot">
+    <div class="container">
+      <!-- <div class="row"> -->
+        <div class="col s12 m10 offset-m3">
+        <textarea id="textValue" autofocus placeholder="Your text here" onchange="saveText(this.value)">
+          
+        </textarea>
+          
+        <!-- </div> -->
+      </div>
+    </div>
+  </div>
+
+  <footer class="page-footer teal darken-2">
+    <div class="container">
+      <div class="row">
+        <div class="col s6 ">
+          <h5 class="white-text">About</h5>
+          <p class="grey-text text-lighten-4">The much-needed text-sharing platform.
+          <br>
+          The document is automatically saved.
+          </p>
+
+        </div>
+        <div class="col s3 offset-s3">
+          <h5 class="white-text">Settings</h5>
+          <ul >
+            <li class="settingsList" > <input  class=" red lighten-5" type="checkbox" id="auto" onclick="checkAuto()" />
+                <label for="auto" class="white-text">Automatic update</label></li>
+          
+          </ul>
+        </div>
+        
+      </div>
+    </div>
+    <div class="footer-copyright">
+      <div class="container">
+      Made by <a class="orange-text text-lighten-3" href="http://materializecss.com">Materialize</a>
+      </div>
+    </div>
+  </footer>
+
+
+  <!--  Scripts-->
+  <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script src="js/materialize.min.js"></script>
+  <script src="js/init.js"></script>
+  <script type="text/javascript" src="js/auth.js"></script>
+
+  </body>
+</html>
