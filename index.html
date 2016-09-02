@@ -12,7 +12,7 @@
   </script>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0"/>
-  <title>Web-Pad | NotesShare</title>
+  <title>pad | NotesShare</title>
 
   <!-- CSS  -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -23,20 +23,20 @@
       width: 100%;
       height: 80vh;
     }
+    #logoimg{
+      height: 90%;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
   </style>
   <script src="https://www.gstatic.com/firebasejs/3.3.0/firebase.js"></script>
 </head>
 <body>
   <nav class="teal darken-1" role="navigation">
-    <div class="nav-wrapper container"><a id="logo-container" href="#" class="brand-logo">Web-Pad</a>
-      <ul class="right hide-on-med-and-down">
+    <div class="nav-wrapper container"><img id="logoimg" src="logo2.png"> 
+      <ul class="right">
         <li><a onclick="readMessage()"> <i class="material-icons">refresh</i></a></li>
       </ul>
-
-      <ul id="nav-mobile" class="side-nav">
-        <li><a href="#">Refresh</a></li>
-      </ul>
-      <a href="#" data-activates="nav-mobile" class="button-collapse"><i class="material-icons">menu</i></a>
     </div>
   </nav>
   <div class="section no-pad-bot">
