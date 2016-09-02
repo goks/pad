@@ -25,6 +25,8 @@
   }
   
   function readMessage() {
+    if(key=="")
+      key="default";
     return firebase.database().ref(key).once('value').then(function(content) {
       if(content)
       {
