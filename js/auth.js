@@ -1,6 +1,3 @@
-//
-
-
 
   // Initialize Firebase
   var config = {
@@ -16,30 +13,60 @@
   key=key[key.length-1];
   key = key.split('.');
   key = key[0];
-  var textContent = document.getElementById("textValue");
+  if(key=="")
+      key="default";
+  console.log('key='+key);
 
+  var textContent = document.getElementById("textValue");
+  var checkbox = document.getElementById("autoParent");
+  checkbox.checked = true;
   // Get a reference to the database service
   var database = firebase.database();
 
   function sendMessage(content) {
-    firebase.database().ref(key).set({
+    database.ref(key).set({
         Content: content
     });
   }
   
   function readMessage() {
     return firebase.database().ref(key).once('value').then(function(content) {
-      if(content)
+      console.log("receieved promise");
+      if(content.val().Content)
       {
-        //alert(content.val());
         textContent.innerHTML = content.val().Content;
       }
+      else
+        console.log("First user");
     });
+  }
+
+  function checkcheck(){
+    if(checkbox.checked)
+     {
+     checkbox.checked=false;
+     return database.ref(key).on('value',function(content) {
+      console.log("auto update set");
+        if(content.val().Content)
+        {
+          textContent.innerHTML = content.val().Content;
+        }
+      });
+     }
+    else
+    {
+      checkbox.checked=true;
+      console.log("auto update unset");
+      return database.ref(key).off();
+    }
   }
 
   function saveText(content){
     sendMessage(content);
   }
+
+   //checkbox.addEventListener('change',checkcheck());
+  // checkbox.onclick = checkAuto();
+
   document.addEventListener('load',readMessage());
   
-
