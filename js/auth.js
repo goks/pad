@@ -31,7 +31,7 @@
   
   function readMessage() {
     return firebase.database().ref(key).once('value').then(function(content) {
-      console.log("receieved promise");
+      console.log("received promise");
       if(content.val().Content)
       {
         textContent.innerHTML = content.val().Content;
