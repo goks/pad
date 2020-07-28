@@ -38,10 +38,8 @@
     <div class="container">
       <!-- <div class="row"> -->
         <div class="col s12 m10 offset-m3">
-        <textarea id="textValue" autofocus placeholder="Your text here" onchange="saveText(this.value)">
-          
+        <textarea id="textValue" autofocus placeholder="Your text here" onkeyup="saveText(this.value)" >
         </textarea>
-          
         <!-- </div> -->
       </div>
     </div>
@@ -62,8 +60,8 @@
           <h5 class="white-text">Settings</h5>
           <ul >
             <li class="settingsList" id="autoParent" > 
-                <input  class=" red lighten-5" type="checkbox" id="auto" onchange="checkcheck()" />
-                <label for="auto" class="white-text">Automatic update</label>
+                <!-- <input  class=" red lighten-5" type="checkbox" id="auto" onchange="checkcheck()" />
+                <label for="auto" class="white-text">Automatic update</label> -->
             </li>
           
           </ul>

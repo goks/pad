@@ -27,19 +27,24 @@
     database.ref(key).set({
         Content: content
     });
+    readMessage()
   }
   
   function readMessage() {
-    return firebase.database().ref(key).once('value').then(function(content) {
-      console.log("received promise");
+      return firebase.database().ref(key).on('value', function(content) {
+      console.log("received promise -- readmsg");
+      // console.log(content.val().Content);
       if(content.val().Content)
       {
-        textContent.innerHTML = content.val().Content;
+        textContent.value = content.val().Content;
       }
       else
         console.log("First user");
-    });
-  }
+    }, function (errorObject) {
+      console.log("The read failed: " + errorObject.code);    
+      }
+    );
+  }  
 
   function checkcheck(){
     if(checkbox.checked)
@@ -49,7 +54,7 @@
       console.log("auto update set");
         if(content.val().Content)
         {
-          textContent.innerHTML = content.val().Content;
+          textContent.value = content.val().Content;
         }
       });
      }
@@ -68,5 +73,5 @@
    //checkbox.addEventListener('change',checkcheck());
   // checkbox.onclick = checkAuto();
 
-  document.addEventListener('load',readMessage());
+  document.addEventListener("DOMContentLoaded",readMessage());
   
