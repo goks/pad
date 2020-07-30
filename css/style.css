@@ -6,6 +6,21 @@
  * Made By MaterializeCSS.com
  */
 
+ #textAreaContainer {
+   min-height: 60vh;
+ }
+.spinner-custom-color{
+  border-color: #f1e6e5;
+}
+.loader {
+  position: absolute;
+  margin: auto;
+  top: 50vh;
+  bottom: 50vh;
+  left: 0;
+  right: 0;
+}
+
 .icon-block {
   padding: 0 15px;
 }
@@ -33,3 +48,7 @@
 body{
 	overflow-x: hidden;
 }    
+
+.ql-editor strong{
+  font-weight:bold;
+}
