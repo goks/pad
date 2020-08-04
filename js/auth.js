@@ -20,17 +20,15 @@ connectedRef.on("value", function (snap) {
   }
 });
 
-
 var key = window.location.href;
 key = key.split('/');
 key = key[key.length - 1];
 key = key.split('.');
 key = key[0];
 if (key == "")
-  key = "default";
+key = "default";
 console.log('key=' + key);
 
-// var textContent = document.getElementById("textValue");
 var richTextContent = document.getElementById('#textAreaContainer')
 var checkbox = document.getElementById("autoParent");
 checkbox.checked = true;
@@ -110,18 +108,19 @@ function saveData(content) {
   console.log('writing', JSON.stringify(currentContents), JSON.stringify(content))
   // currentDelta = delta;
   currentContents = content
+  console.log("SIZE: ",quill.getLength());
   sendMessage(content);
 }
 
 function getTextChange() {
   return quill.on('text-change', function (delta, oldDelta, source) {
     if (source == 'api') {
-      // console.log("An API call triggered this change.", oldDelta, delta, source);
+      // console.log("An API call triggered.", oldDelta, delta, source);
       // quill.setSelection(position);
       contents = quill.getContents();
       saveData(contents);
     } else if (source == 'user') {
-      // console.log("A user action triggered this change.", oldDelta, delta, source);
+      // console.log("A user action triggered.", oldDelta, delta, source);
       contents = quill.getContents();
       saveData(contents);
     }
@@ -137,3 +136,4 @@ function doThese() {
 }
 
 document.addEventListener("DOMContentLoaded", doThese());
+
