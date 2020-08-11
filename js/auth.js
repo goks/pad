@@ -10,11 +10,11 @@ firebase.initializeApp(config);
 var connectedRef = firebase.database().ref(".info/connected");
 connectedRef.on("value", function (snap) {
   if (snap.val() === true) {
-    console.log("connection estalished");
+    // console.log("connection estalished");
     quill.enable(true);
     M.toast({ html: 'Connected' })
   } else {
-    console.log("connection disconnected");
+    // console.log("connection disconnected");
     quill.enable(false);
     M.toast({ html: 'Disconnected. Please check internet connection.' })
   }
@@ -38,7 +38,7 @@ var database = firebase.database();
 var currentContents = null;
 
 function sendMessage(content) {
-  console.log('writeMsg')
+  // console.log('writeMsg')
   // console.log(content)
   database.ref(key).set({
     Content: content,
@@ -50,6 +50,11 @@ function sendMessage(content) {
 function readMessage() {
   return database.ref(key).on('value', function (content) {
     document.getElementById('spinner').style.visibility = 'visible'
+    if(!content.val()){
+      console.log('first user')
+      document.getElementById('spinner').style.visibility = 'hidden'
+      return
+    }
     content = content.val().Content
     if (!currentContents) {
       console.log("received promise -- readmsg  -- SET");
@@ -58,19 +63,15 @@ function readMessage() {
       return
     }
     if (content && JSON.stringify(content) != JSON.stringify(quill.getContents())) {
-      console.log("received promise -- readmsg -- UPDATE", content);
-      // t = quill.getSelection()
-      // if(t){
-      //   position = t.index
-      // }
+      console.log("received promise -- readmsg -- UPDATE");
       currentContents = content
-      console.log('SAVED', currentContents)
+      // console.log('SAVED', currentContents)
       quill.setContents(content)
       document.getElementById('spinner').style.visibility = 'hidden'
       return
     }
     document.getElementById('spinner').style.visibility = 'hidden'
-    console.log("received promise -- readmsg  -- SKIP", content);
+    console.log("received promise -- readmsg  -- SKIP");
   }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
   }
@@ -105,10 +106,10 @@ function saveData(content) {
     console.log('SKIP WRITE! 2')
     return
   }
-  console.log('writing', JSON.stringify(currentContents), JSON.stringify(content))
+  // console.log('writing', JSON.stringify(currentContents), JSON.stringify(content))
   // currentDelta = delta;
   currentContents = content
-  console.log("SIZE: ",quill.getLength());
+  // console.log("SIZE: ",quill.getLength());
   sendMessage(content);
 }
 
