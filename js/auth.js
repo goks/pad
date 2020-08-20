@@ -7,6 +7,7 @@ var config = {
 };
 firebase.initializeApp(config);
 
+var initialTrigger = true
 var connectedRef = firebase.database().ref(".info/connected");
 connectedRef.on("value", function (snap) {
   if (snap.val() === true) {
@@ -16,7 +17,8 @@ connectedRef.on("value", function (snap) {
   } else {
     // console.log("connection disconnected");
     quill.enable(false);
-    M.toast({ html: 'Disconnected. Please check internet connection.' })
+    if(!initialTrigger) { M.toast({ html: 'Disconnected. Please check internet connection.' }) }
+    initialTrigger = false;
   }
 });
 

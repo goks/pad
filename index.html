@@ -186,7 +186,9 @@
         var quill = new Quill('#textAreaContainer', {
             //debug: 'info',
             modules: {
-                toolbar: toolbarOptions
+                toolbar: {
+                    container: toolbarOptions,
+                },
             },
             placeholder: 'Compose ...',
             theme: 'snow'
