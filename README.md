@@ -13,6 +13,9 @@ the page copies the address of the note you are looking at.
 
 ## Security
 
+Steps for the console work, the SDK upgrade and the log compactor:
+[docs/hardening.md](docs/hardening.md).
+
 The database is public by design: anyone holding a link can read and write that
 note, and no one has to log in. What the rules in `database.rules.json` do is
 stop the cheap destructive cases:
