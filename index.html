@@ -136,8 +136,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <!-- <script src="js/materialize.min.js"></script> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-    <!-- <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script> -->
-    <script type="text/javascript" src="js/quill.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script>
         var position = 0
         var toolbarOptions = [
@@ -183,18 +182,45 @@
             ['link', 'image', 'video', 'formula'],
             // ['clean']                                         // remove formatting button
         ];
+        // Rejects a picture bigger than 512 KB: the image travels as a base64
+        // data URL inside the document, and a single Firebase write cannot
+        // exceed 1 MB. This used to be patched into js/quill.js, where an
+        // upgrade of the library would quietly drop it.
+        var MAX_IMAGE_BYTES = 512 * 1024;
+        function insertImage() {
+            var fileInput = document.createElement('input');
+            fileInput.setAttribute('type', 'file');
+            fileInput.setAttribute('accept', 'image/*');
+            fileInput.onchange = function () {
+                var file = fileInput.files && fileInput.files[0];
+                if (!file) return;
+                if (file.size > MAX_IMAGE_BYTES) {
+                    M.toast({ html: 'Image is larger than 512 KB' });
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function () {
+                    var range = quill.getSelection(true) || { index: quill.getLength() - 1 };
+                    quill.insertEmbed(range.index, 'image', reader.result, 'user');
+                };
+                reader.readAsDataURL(file);
+            };
+            fileInput.click();
+        }
         var quill = new Quill('#textAreaContainer', {
             //debug: 'info',
             modules: {
                 toolbar: {
                     container: toolbarOptions,
+                    handlers: {
+                        image: insertImage
+                    },
                 },
             },
             placeholder: 'Compose ...',
             theme: 'snow'
         });
     </script>
-    <script src=" https://cdnjs.cloudflare.com/ajax/libs/pica/6.1.0/pica.min.js"></script>
     <script type="text/javascript" src="js/auth.js"></script>
     <script>
         (function(i, s, o, g, r, a, m) {

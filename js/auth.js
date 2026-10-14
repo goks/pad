@@ -54,6 +54,11 @@ function sendMessage(content) {
   database.ref(key).set({
     Content: content,
     // Delta: delta
+  }).catch(function (err) {
+    // Firebase rejects a write over 1 MB and the free tier stops at its quota;
+    // without this the note keeps taking edits and silently stops saving.
+    console.error('save failed', err);
+    M.toast({ html: 'Not saved - check your connection' });
   });
   // readMessage()
 }
