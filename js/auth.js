@@ -76,12 +76,9 @@ function pathSlug() {
   return segments.length > 1 ? segments[segments.length - 1] : '';
 }
 
-try {
-  key = decodeURIComponent(key);
-} catch (e) {
-  key = "";
-}
-key = key.replace(/[.#\[\]$\/\s]/g, '-');
+// A literal space can only come from something that did not encode it: the
+// form the old pads are stored under is %20, so that is what a space becomes.
+key = key.replace(/\s/g, '%20').replace(/[.#\[\]$\/]/g, '-');
 if (key == "")
 key = newSlug();
 console.log('key=' + key);
