@@ -47,6 +47,8 @@ checkbox.checked = true;
 var database = firebase.database();
 // var currentDelta = null;
 var currentContents = null;
+var saveTimer = null;
+var SAVE_DELAY_MS = 500;
 
 function sendMessage(content) {
   // console.log('writeMsg')
@@ -134,16 +136,14 @@ function saveData(content) {
 
 function getTextChange() {
   return quill.on('text-change', function (delta, oldDelta, source) {
-    if (source == 'api') {
-      // console.log("An API call triggered.", oldDelta, delta, source);
-      // quill.setSelection(position);
-      contents = quill.getContents();
-      saveData(contents);
-    } else if (source == 'user') {
-      // console.log("A user action triggered.", oldDelta, delta, source);
-      contents = quill.getContents();
-      saveData(contents);
-    }
+    // Every keystroke used to be one write of the whole document, and every
+    // other viewer downloaded it. Wait for a pause in typing; the user
+    // action and the remote update (source 'api') both end up here, and
+    // saveData already drops a document identical to the last one sent.
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      saveData(quill.getContents());
+    }, SAVE_DELAY_MS);
   });
 }
 
