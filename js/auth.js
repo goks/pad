@@ -7,17 +7,29 @@ var config = {
 };
 firebase.initializeApp(config);
 
+// One small notice instead of a whole framework: the status line carries the
+// state, this is for the two things that need an eye (a lost connection, a
+// write that failed). index.html's image handler calls it too.
+function padToast(message) {
+  var el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.add('on');
+  clearTimeout(padToast.timer);
+  padToast.timer = setTimeout(function () { el.classList.remove('on'); }, 1800);
+}
+window.padToast = padToast;
+
 var initialTrigger = true
 var connectedRef = firebase.database().ref(".info/connected");
 connectedRef.on("value", function (snap) {
   if (snap.val() === true) {
     // console.log("connection estalished");
     quill.enable(true);
-    M.toast({ html: 'Connected' })
   } else {
     // console.log("connection disconnected");
     quill.enable(false);
-    if(!initialTrigger) { M.toast({ html: 'Disconnected. Please check internet connection.' }) }
+    if(!initialTrigger) { padToast('Disconnected - your typing is not being saved') }
     initialTrigger = false;
   }
 });
@@ -71,6 +83,15 @@ var linkHash = key + (linkKey ? ',' + linkKey : '');
 if (window.location.hash.slice(1) !== linkHash) {
   history.replaceState(null, null, BASE + '#' + linkHash);
 }
+
+// The pad is its URL, so show it: the card header, the share box, and the lock
+// badge when the link carries a key.
+var padNameEl = document.getElementById('padName');
+if (padNameEl) padNameEl.textContent = key;
+var padLinkEl = document.getElementById('padLink');
+if (padLinkEl) padLinkEl.value = BASE + '#' + linkHash;
+if (linkKey) document.getElementById('encBadge').classList.add('on');
+
 
 // A private pad carries a key in its link: /pad/#name,key. Everything written
 // to the database is encrypted with it (AES-GCM), and the key travels in the
@@ -215,7 +236,7 @@ function flushSave() {
     // without this the note keeps taking edits and quietly stops saving.
     console.error('save failed', err);
     statusMessage = 'Not saved - check your connection';
-    M.toast({ html: statusMessage });
+    padToast(statusMessage);
     renderStatus();
   });
 }
@@ -272,7 +293,7 @@ function copyLink() {
   var url = window.location.href;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(function () {
-      M.toast({ html: 'Link copied' });
+      padToast('Link copied');
     }, function () {
       window.prompt('Copy this link', url);
     });

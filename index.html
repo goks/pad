@@ -2,164 +2,222 @@
 <html lang="en">
 
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="author" content="Gokul AV">
-    <meta name="keywords" content="Online,text,share,realtime,firebase,material,pad">
+    <meta name="description" content="A note you can share: type it, copy the link, and anyone with that link can read and edit it - live, no account.">
+    <meta name="theme-color" content="#efe9e1" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#171512" media="(prefers-color-scheme: dark)">
+    <meta property="og:title" content="pad - a note you can share">
+    <meta property="og:description" content="Type, copy the link, done. Anyone with the link can read and edit the note, live.">
+    <meta property="og:image" content="https://goks.github.io/pad/logo.png">
+    <meta property="og:url" content="https://goks.github.io/pad/">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23c2410c'/%3E%3Cpath d='M9 11h14M9 16h14M9 21h9' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
     <title>pad | NotesShare</title>
 
-    <!-- CSS  -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <link href="css/style.css" type="text/css" rel="stylesheet" media="screen,projection" />
+    <!-- Everything needed to paint the first screen is in this block: no
+         framework, no icon font, no stylesheet on the critical path. The
+         editor and the database arrive at the end of the body. -->
+    <style>
+        :root {
+            --ground: #efe9e1; --card: #fffdf9; --ink: #2a2622; --muted: #8a8177; --line: #e8e0d5;
+            --accent: #c2410c; --accent-soft: #fdece2;
+            --shadow: 0 20px 50px -20px rgba(70, 50, 20, .35), 0 2px 6px rgba(70, 50, 20, .06);
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --ground: #171512; --card: #211e1a; --ink: #f2ede6; --muted: #9c948a; --line: #332e28;
+                --accent: #fb923c; --accent-soft: #33251a;
+                --shadow: 0 20px 50px -20px rgba(0, 0, 0, .7), 0 2px 6px rgba(0, 0, 0, .4);
+            }
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; background: var(--ground); color: var(--ink);
+            font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            display: flex; flex-direction: column; align-items: center;
+            padding: clamp(14px, 3vw, 44px) 16px;
+        }
+        /* ── top bar: the wordmark, the state, two actions ───────────────── */
+        .topbar { width: min(880px, 100%); display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+        .brand { font-weight: 700; letter-spacing: -.02em; font-size: 17px; }
+        .brand em { font-style: normal; color: var(--accent); }
+        .topbar .right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+        .badge {
+            display: none; align-items: center; gap: 6px; font-size: 12px; color: var(--accent);
+            background: var(--accent-soft); border-radius: 999px; padding: 4px 10px;
+        }
+        .badge.on { display: inline-flex; }
+        button {
+            font: inherit; font-size: 13.5px; color: var(--ink); background: transparent;
+            border: 1px solid transparent; border-radius: 999px; padding: 7px 11px;
+            display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+        }
+        button:hover { background: var(--accent-soft); }
+        button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .topbar button { border-color: var(--line); background: var(--card); }
+        svg.icon { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
-    <script src="https://www.gstatic.com/firebasejs/3.3.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/3.3.0/firebase-database.js"></script>
+        /* ── the note is a card ─────────────────────────────────────────── */
+        .card {
+            width: min(880px, 100%); background: var(--card); border: 1px solid var(--line);
+            border-radius: 18px; box-shadow: var(--shadow); padding: clamp(18px, 3.5vw, 38px);
+            position: relative;
+        }
+        .padname {
+            font-size: clamp(21px, 3vw, 29px); font-weight: 700; letter-spacing: -.02em;
+            line-height: 1.25; margin: 0 0 4px; overflow-wrap: anywhere;
+        }
+        .meta { font-size: 12.5px; color: var(--muted); margin: 0 0 20px; min-height: 19px; }
 
+        /* ── dock: the formatting pill, the save state, Share ───────────── */
+        .dock { position: sticky; bottom: 12px; margin-top: 26px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .pill {
+            display: inline-flex; align-items: center; padding: 4px; background: var(--card);
+            border: 1px solid var(--line); border-radius: 999px;
+            box-shadow: 0 6px 18px -10px rgba(70, 50, 20, .5);
+        }
+        .go {
+            margin-left: auto; background: var(--accent); color: #fff; font-weight: 600;
+            box-shadow: 0 8px 20px -8px var(--accent); padding: 9px 15px;
+        }
+        .go:hover { background: var(--accent); filter: brightness(1.06); }
+        .go[aria-expanded="true"] { border-radius: 999px 999px 6px 6px; }
+        .save { font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+        #spinner { font-size: 12.5px; color: var(--muted); }
+
+        /* the share popover */
+        .pop {
+            position: absolute; right: 0; bottom: calc(100% + 10px); width: min(360px, 88vw);
+            background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+            box-shadow: 0 20px 50px -20px rgba(70, 50, 20, .45); padding: 14px; display: none;
+        }
+        .pop.on { display: block; }
+        .pop h3 { margin: 0 0 4px; font-size: 14px; }
+        .pop p { margin: 0 0 10px; font-size: 12.5px; color: var(--muted); }
+        .pop .link { display: flex; gap: 6px; }
+        .pop input {
+            flex: 1; min-width: 0; font: 12.5px ui-monospace, Menlo, monospace; color: var(--muted);
+            background: color-mix(in srgb, var(--ink) 5%, transparent); border: 1px solid var(--line);
+            border-radius: 9px; padding: 7px 9px;
+        }
+        .pop .link button { background: var(--accent); color: #fff; font-weight: 600; }
+        .pop .lockrow { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; font-size: 12.5px; color: var(--muted); }
+        .pop .lockrow button { border-color: var(--line); padding: 5px 9px; font-size: 12.5px; white-space: nowrap; }
+
+        .toast {
+            position: fixed; left: 50%; top: 16px; transform: translateX(-50%) translateY(-10px);
+            background: var(--ink); color: var(--ground); font-size: 13px; padding: 9px 14px;
+            border-radius: 999px; opacity: 0; transition: .2s; pointer-events: none; z-index: 9;
+        }
+        .toast.on { opacity: 1; transform: translateX(-50%); }
+
+        /* ── the editor: Quill, without its chrome ──────────────────────── */
+        .ql-container.ql-snow { border: none; font-size: 16.5px; font-family: inherit; }
+        .ql-editor { padding: 0; min-height: 45vh; line-height: 1.7; }
+        .ql-editor.ql-blank::before { left: 0; right: 0; color: var(--muted); font-style: normal; }
+        .ql-editor h1, .ql-editor h2 { letter-spacing: -.02em; line-height: 1.25; }
+        .ql-editor blockquote { border-left: 3px solid var(--accent-soft); padding-left: 14px; color: var(--muted); }
+        .ql-editor img { max-width: 100%; height: auto; border-radius: 10px; }
+        .ql-editor a, .ql-snow a { color: var(--accent); }
+        #toolbar.ql-snow { border: none; padding: 0; display: inline-flex; align-items: center; }
+        #toolbar.ql-snow .ql-formats { margin-right: 0; display: inline-flex; align-items: center; gap: 1px; }
+        #toolbar.ql-snow button { width: 30px; height: 30px; padding: 5px; border-radius: 8px; float: none; }
+        #toolbar.ql-snow button:hover, #toolbar.ql-snow button.ql-active { background: var(--accent-soft); }
+        #toolbar.ql-snow button.ql-active .ql-stroke { stroke: var(--accent); }
+        #toolbar.ql-snow .ql-stroke { stroke: currentColor; }
+        #toolbar.ql-snow .ql-fill, #toolbar.ql-snow .ql-stroke.ql-fill { fill: currentColor; }
+        #toolbar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 4px 4px; }
+        .ql-snow .ql-tooltip { border-radius: 10px; box-shadow: var(--shadow); border-color: var(--line); background: var(--card); color: var(--ink); }
+        .ql-snow .ql-tooltip input[type=text] { border-color: var(--line); background: transparent; color: var(--ink); }
+
+        @media (max-width: 560px) {
+            .go { margin-left: 0; }
+            .padname { font-size: 21px; }
+        }
+    </style>
+    <link rel="stylesheet" href="css/quill.snow.css">
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 </head>
 
 <body>
-    <nav class="teal darken-1" role="navigation">
-        <div class="nav-wrapper container"><img id="logoimg" src="logo2.png">
-            <ul class="right">
-                <li><a id="newNote" title="New note"><i class="material-icons">add_box</i></a></li>
-                <li><a id="newPrivateNote" title="New private note: the key stays in the link"><i class="material-icons">lock_outline</i></a></li>
-                <li><a id="copyLink" title="Copy link"><i class="material-icons">link</i></a></li>
-            </ul>
-        </div>
-    </nav>
-    <div class="section">
-        <div class="container">
-            <div class="row">
-                <div class="col s12" id='editorCol'>
-                    <div class="" id='toolbarContainer'></div>
-                    <div class="" id='textAreaContainer'></div>
+    <div class="topbar">
+        <span class="brand">pad<em>.</em></span>
+        <span class="badge" id="encBadge">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
+            encrypted &middot; the key is in the link
+        </span>
+        <span class="right">
+            <button id="newNote" title="A new note, with a name nobody can guess">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg> New
+            </button>
+            <button id="newPrivateNote" title="A new note, encrypted: its key stays in its link">
+                <svg class="icon" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg> Private
+            </button>
+        </span>
+    </div>
+
+    <main class="card">
+        <h1 class="padname" id="padName">&hellip;</h1>
+        <p class="meta" id="padStatus"></p>
+
+        <div id="textAreaContainer"></div>
+
+        <div class="dock">
+            <span class="pill">
+                <div id="toolbar">
+                    <span class="ql-formats">
+                        <button class="ql-bold" title="Bold"></button>
+                        <button class="ql-italic" title="Italic"></button>
+                        <button class="ql-underline" title="Underline"></button>
+                    </span>
+                    <span class="sep"></span>
+                    <span class="ql-formats">
+                        <button class="ql-list" value="bullet" title="Bulleted list"></button>
+                        <button class="ql-list" value="ordered" title="Numbered list"></button>
+                        <button class="ql-blockquote" title="Quote"></button>
+                    </span>
+                    <span class="sep"></span>
+                    <span class="ql-formats">
+                        <button class="ql-link" title="Link"></button>
+                        <button class="ql-image" title="Picture, up to 512 KB"></button>
+                        <button class="ql-clean" title="Clear formatting"></button>
+                    </span>
+                </div>
+            </span>
+            <span id="spinner">Loading&hellip;</span>
+
+            <button class="go" id="shareBtn" aria-expanded="false" aria-controls="pop">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" /></svg> Share
+            </button>
+
+            <div class="pop" id="pop">
+                <h3>Share this note</h3>
+                <p>Anyone with this link can read it and write in it, live. No account, no password.</p>
+                <div class="link">
+                    <input id="padLink" readonly value="goks.github.io/pad/">
+                    <button id="copyLink">Copy</button>
+                </div>
+                <div class="lockrow">
+                    <button id="popPrivate">
+                        <svg class="icon" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg> Encrypted note
+                    </button>
+                    <span>the key lives in that link and nowhere else &mdash; lose the link, lose the note</span>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="preloader-wrapper active loader" id='spinner'>
-        <div class="spinner-layer spinner-blue">
-            <div class="circle-clipper left">
-                <div class="circle"></div>
-            </div>
-            <div class="gap-patch">
-                <div class="circle"></div>
-            </div>
-            <div class="circle-clipper right">
-                <div class="circle"></div>
-            </div>
-        </div>
+    </main>
 
-        <div class="spinner-layer spinner-red">
-            <div class="circle-clipper left">
-                <div class="circle"></div>
-            </div>
-            <div class="gap-patch">
-                <div class="circle"></div>
-            </div>
-            <div class="circle-clipper right">
-                <div class="circle"></div>
-            </div>
-        </div>
+    <div class="toast" id="toast"></div>
 
-        <div class="spinner-layer spinner-yellow">
-            <div class="circle-clipper left">
-                <div class="circle"></div>
-            </div>
-            <div class="gap-patch">
-                <div class="circle"></div>
-            </div>
-            <div class="circle-clipper right">
-                <div class="circle"></div>
-            </div>
-        </div>
-
-        <div class="spinner-layer spinner-green">
-            <div class="circle-clipper left">
-                <div class="circle"></div>
-            </div>
-            <div class="gap-patch">
-                <div class="circle"></div>
-            </div>
-            <div class="circle-clipper right">
-                <div class="circle"></div>
-            </div>
-        </div>
-    </div>
-
-
-    <footer class="page-footer teal darken-2">
-        <div class="container">
-            <div class="row">
-                <div class="col s12">
-                    <h5 class="white-text">About</h5>
-                    <p class="grey-text text-lighten-4">The much-needed text-sharing platform.</p>
-                    <p class="grey-text text-lighten-4" id="padStatus"></p>
-                </div>
-            </div>
-        </div>
-        <div class="footer-copyright">
-            <div class="container">
-                <span class="orange-text text-lighten-3">©</span> All rights reserved.
-            </div>
-        </div>
-    </footer>
-
-
-    <!--  Scripts-->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="js/quill.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.3.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.3.0/firebase-database.js"></script>
     <script>
-        var toolbarOptions = [
-            [{
-                'font': []
-            }],
-            ['bold', 'italic', 'underline', 'strike'], // toggled buttons
-            ['blockquote', 'code-block'],
-
-            // [{ 'header': 1 }, { 'header': 2 }],               // custom button values
-            [{
-                'list': 'ordered'
-            }, {
-                'list': 'bullet'
-            }],
-            [{
-                'script': 'sub'
-            }, {
-                'script': 'super'
-            }], // superscript/subscript
-            [{
-                'indent': '-1'
-            }, {
-                'indent': '+1'
-            }], // outdent/indent
-            [{
-                'direction': 'rtl'
-            }], // text direction
-
-            [{
-                'size': ['small', false, 'large', 'huge']
-            }], // custom dropdown
-            // [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-
-            [{
-                'color': []
-            }, {
-                'background': []
-            }], // dropdown with defaults from theme
-            [{
-                'align': []
-            }],
-            ['link', 'image', 'video', 'formula'],
-            // ['clean']                                         // remove formatting button
-        ];
-        // Rejects a picture bigger than 512 KB: the image travels as a base64
-        // data URL inside the document, and a single Firebase write cannot
-        // exceed 1 MB. This used to be patched into js/quill.js, where an
-        // upgrade of the library would quietly drop it.
+        // A picture travels inside the document as a base64 data URL and one
+        // Firebase write cannot exceed 1 MB, so the cap lives here in the app
+        // rather than in a patched copy of the library.
         var MAX_IMAGE_BYTES = 512 * 1024;
         function insertImage() {
             var fileInput = document.createElement('input');
@@ -169,34 +227,49 @@
                 var file = fileInput.files && fileInput.files[0];
                 if (!file) return;
                 if (file.size > MAX_IMAGE_BYTES) {
-                    M.toast({ html: 'Image is larger than 512 KB' });
+                    window.padToast('That picture is larger than 512 KB');
                     return;
                 }
                 var reader = new FileReader();
                 reader.onload = function () {
                     var range = quill.getSelection(true) || { index: quill.getLength() - 1 };
                     quill.insertEmbed(range.index, 'image', reader.result, 'user');
+                    quill.setSelection(range.index + 1);
                 };
                 reader.readAsDataURL(file);
             };
             fileInput.click();
         }
         var quill = new Quill('#textAreaContainer', {
-            //debug: 'info',
             modules: {
                 toolbar: {
-                    container: toolbarOptions,
-                    handlers: {
-                        image: insertImage
-                    },
-                },
+                    container: '#toolbar',
+                    handlers: { image: insertImage }
+                }
             },
-            placeholder: 'Compose ...',
+            placeholder: 'Write it here \u2014 then share the link.',
             theme: 'snow'
         });
+        // the share button and its popover: chrome, not sync
+        (function () {
+            var btn = document.getElementById('shareBtn'), pop = document.getElementById('pop');
+            function close() { pop.classList.remove('on'); btn.setAttribute('aria-expanded', 'false'); }
+            btn.onclick = function (e) {
+                e.stopPropagation();
+                var open = pop.classList.toggle('on');
+                btn.setAttribute('aria-expanded', String(open));
+                if (open) setTimeout(function () { document.getElementById('padLink').select(); }, 60);
+            };
+            document.addEventListener('click', function (e) {
+                if (!pop.contains(e.target) && e.target !== btn) close();
+            });
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+            document.getElementById('popPrivate').onclick = function () {
+                document.getElementById('newPrivateNote').click();
+            };
+        })();
     </script>
-    <script type="text/javascript" src="js/auth.js"></script>
-
+    <script src="js/auth.js"></script>
 </body>
 
 </html>
