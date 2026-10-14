@@ -22,14 +22,22 @@ connectedRef.on("value", function (snap) {
   }
 });
 
-// The pad is the last path segment of the URL. Firebase keys cannot contain
-// . # [ ] $ / : a '#' or a bracket used to make every read and write throw, a
-// path '/' silently created a nested node, and the old split('.') made
-// /pad/notes.v2 and /pad/notes the same pad. Normalise instead of guessing.
-var key = "";
-if (window.location.pathname.split('/').filter(Boolean).length > 1) {
-  key = window.location.pathname.replace(/\/+$/, '').split('/').pop();
+// The pad is the name at the end of the address. A new note puts it in the
+// hash, /pad/#name; links handed out before that put it in the path,
+// /pad/name, and still work. The hash never travels to a server, so the page
+// itself answers 200 - a path that is not a real file is served by 404.html
+// with a 404 status, which mail clients and link previews treat as broken.
+//
+// Firebase keys cannot contain . # [ ] $ / : a '#' or a bracket used to make
+// every read and write throw, a path '/' silently created a nested node, and
+// the old split('.') made /pad/notes.v2 and /pad/notes the same pad.
+var key = window.location.hash.slice(1) || pathSlug();
+
+function pathSlug() {
+  var segments = window.location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+  return segments.length > 1 ? segments[segments.length - 1] : '';
 }
+
 try {
   key = decodeURIComponent(key);
 } catch (e) {
@@ -51,8 +59,8 @@ function newSlug() {
 // Where the app is served from, read off this script's own URL, so the same
 // code works at goks.github.io/pad/ and at the root of a domain.
 var BASE = document.currentScript ? document.currentScript.src.replace(/(js\/)?auth\.js.*$/, '') : window.location.pathname;
-if (window.location.pathname.indexOf(key) === -1 && window.location.hash.slice(1) !== key) {
-  history.replaceState(null, null, BASE + key);
+if (window.location.hash.slice(1) !== key) {
+  history.replaceState(null, null, BASE + '#' + key);
 }
 
 // Get a reference to the database service
@@ -163,7 +171,7 @@ function getTextChange() {
 }
 
 function newNote() {
-  window.location.href = BASE + newSlug();
+  window.location.hash = newSlug();
 }
 
 function copyLink() {
@@ -189,4 +197,12 @@ function doThese() {
 }
 
 document.addEventListener("DOMContentLoaded", doThese());
+
+// A link to another note only changes the hash, and a hash change does not
+// reload the page by itself: without this, following such a link, pasting one
+// into the address bar, or pressing the new note button leaves the old pad on
+// screen under the new address.
+window.addEventListener('hashchange', function () {
+  window.location.reload();
+});
 
