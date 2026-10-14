@@ -212,8 +212,13 @@
     <div class="toast" id="toast"></div>
 
     <script src="js/quill.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/3.3.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/3.3.0/firebase-database.js"></script>
+    <!-- v11 compat: the same firebase.* API as the 2016 build, current, and the
+         only build that can send an App Check token. The modular ESM build
+         would split into a module graph (one request per module) without a
+         bundler, which this project does not have. -->
+    <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-check-compat.js"></script>
     <script>
         // A picture travels inside the document as a base64 data URL and one
         // Firebase write cannot exceed 1 MB, so the cap lives here in the app

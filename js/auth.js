@@ -7,6 +7,22 @@ var config = {
 };
 firebase.initializeApp(config);
 
+// App Check. Paste the reCAPTCHA v3 site key registered in the Firebase console
+// (docs/hardening.md, step 4) and the database starts accepting a client only
+// when it can show a token for this site - which is the only real gate this app
+// can have, since it has no logins. Empty means off: the app behaves exactly as
+// it did before, and the console's enforcement switch is what actually blocks
+// unverified clients, so leave that off until a token shows up in the graph.
+var APP_CHECK_SITE_KEY = '';
+if (APP_CHECK_SITE_KEY) {
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    // prints a debug token in the console, to be added under App Check -> the
+    // app -> Manage debug tokens, or local writes are rejected once enforced
+    self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  }
+  firebase.appCheck().activate(APP_CHECK_SITE_KEY, true);
+}
+
 // One small notice instead of a whole framework: the status line carries the
 // state, this is for the two things that need an eye (a lost connection, a
 // write that failed). index.html's image handler calls it too.
