@@ -31,11 +31,17 @@ connectedRef.on("value", function (snap) {
 // Firebase keys cannot contain . # [ ] $ / : a '#' or a bracket used to make
 // every read and write throw, a path '/' silently created a nested node, and
 // the old split('.') made /pad/notes.v2 and /pad/notes the same pad.
+// A path that names a real file is not a pad: /pad/logo.png is the picture and
+// /pad/index.html is this page. Those addresses are the app's own assets, and
+// a note could never be read there.
+var RESERVED = { 'index.html': 1, '404.html': 1, 'logo.png': 1, 'logo1.png': 1, 'logo2.png': 1, 'css': 1, 'js': 1, 'font': 1, 'fonts': 1, 'readme.md': 1, 'tools': 1, 'database.rules.json': 1 };
+
 var key = window.location.hash.slice(1) || pathSlug();
 
 function pathSlug() {
   var segments = window.location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
-  return segments.length > 1 ? segments[segments.length - 1] : '';
+  var last = segments.length > 1 ? segments[segments.length - 1] : '';
+  return RESERVED[last.toLowerCase()] ? '' : last;
 }
 
 try {
