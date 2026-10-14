@@ -40,3 +40,15 @@ Until then, treat every pad as world readable and world writable.
 and keeps 30 days. Cron example:
 
     17 3 * * * PAD_BACKUP_DIR=/srv/pad-backups /path/to/tools/backup-pad.sh
+
+### Private notes
+
+The lock button makes a note whose key lives in the link and nowhere else:
+`goks.github.io/pad/#name,key`. The text is encrypted in your browser before
+it is written (AES-GCM) and the key is never sent to a server - everything
+after the `#` stays in the browser. Only someone holding the link can read
+the note.
+
+Two things to know. Lose the link and the note is gone: nothing can recover
+it. And the database still shows that a pad with that name exists, how large
+it is, when it changed, and which client wrote each part of it.

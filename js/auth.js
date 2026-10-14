@@ -36,7 +36,9 @@ connectedRef.on("value", function (snap) {
 // a note could never be read there.
 var RESERVED = { 'index.html': 1, '404.html': 1, 'logo.png': 1, 'logo1.png': 1, 'logo2.png': 1, 'css': 1, 'js': 1, 'font': 1, 'fonts': 1, 'readme.md': 1, 'tools': 1, 'database.rules.json': 1 };
 
-var key = window.location.hash.slice(1) || pathSlug();
+var hashParts = window.location.hash.slice(1).split(',');
+var linkKey = hashParts[1] || '';          // set on a pad whose text is encrypted
+var key = hashParts[0] || pathSlug();
 
 function pathSlug() {
   var segments = window.location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
@@ -65,8 +67,67 @@ function newSlug() {
 // Where the app is served from, read off this script's own URL, so the same
 // code works at goks.github.io/pad/ and at the root of a domain.
 var BASE = document.currentScript ? document.currentScript.src.replace(/(js\/)?auth\.js.*$/, '') : window.location.pathname;
-if (window.location.hash.slice(1) !== key) {
-  history.replaceState(null, null, BASE + '#' + key);
+var linkHash = key + (linkKey ? ',' + linkKey : '');
+if (window.location.hash.slice(1) !== linkHash) {
+  history.replaceState(null, null, BASE + '#' + linkHash);
+}
+
+// A private pad carries a key in its link: /pad/#name,key. Everything written
+// to the database is encrypted with it (AES-GCM), and the key travels in the
+// hash, which the browser never sends anywhere - not in a request, not in a
+// log. Whoever holds the link can read the note and nobody else can, including
+// whoever runs the database. The database still shows that a pad with that
+// name exists, how big it is and when it changed, and the client id in each op.
+var CRYPTO_KEY = null;
+var ready = linkKey ? loadKey(linkKey) : Promise.resolve();
+var applyChain = ready;
+
+function newKey() {
+  return bytesToB64url(crypto.getRandomValues(new Uint8Array(32)));
+}
+
+function bytesToB64url(bytes) {
+  var binary = '';
+  for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function b64urlToBytes(text) {
+  var binary = window.atob(text.replace(/-/g, '+').replace(/_/g, '/'));
+  var bytes = new Uint8Array(binary.length);
+  for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+function loadKey(encoded) {
+  if (!(window.crypto && crypto.subtle)) {
+    statusMessage = 'This browser cannot open an encrypted pad';
+    renderStatus();
+    return Promise.reject(new Error('no WebCrypto'));
+  }
+  return crypto.subtle.importKey('raw', b64urlToBytes(encoded), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']).then(function (imported) {
+    CRYPTO_KEY = imported;
+  }, function () {
+    statusMessage = 'This link is missing part of its key';
+    renderStatus();
+  });
+}
+
+function sealOp(ops) {
+  var iv = crypto.getRandomValues(new Uint8Array(12));
+  return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, CRYPTO_KEY, new TextEncoder().encode(JSON.stringify(ops))).then(function (sealed) {
+    var bytes = new Uint8Array(iv.length + sealed.byteLength);
+    bytes.set(iv, 0);
+    bytes.set(new Uint8Array(sealed), iv.length);
+    return bytesToB64url(bytes);
+  });
+}
+
+function openOp(encoded) {
+  var bytes = b64urlToBytes(encoded);
+  return crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytes.slice(0, 12) }, CRYPTO_KEY, bytes.slice(12)).then(function (plain) {
+    return JSON.parse(new TextDecoder().decode(plain));
+  });
 }
 
 // Get a reference to the database service
@@ -85,12 +146,13 @@ var SAVE_DELAY_MS = 500;
 // inside the same paragraph can land a few characters off; a CRDT (Yjs) is
 // the upgrade when that matters.
 function readMessage() {
-  // A pad created before the op log holds one whole-document snapshot. It is
-  // the state the first op was written against, so load it first and old
-  // links keep working.
-  return padRef.child('Content').once('value').then(function (snapshot) {
-    if (snapshot.exists()) quill.setContents(snapshot.val());
-  }).catch(function (err) {
+  // A pad created before the op log holds one whole-document snapshot, and it
+  // is the state the first op was written against, so load it first and old
+  // links keep working. A pad with a key in its link has no such snapshot.
+  var snapshot = CRYPTO_KEY ? Promise.resolve() : padRef.child('Content').once('value').then(function (loaded) {
+    if (loaded.exists()) quill.setContents(loaded.val());
+  });
+  return snapshot.catch(function (err) {
     console.error('load failed', err);
   }).then(function () {
     // child_added fires for everything already there, in order, and then for
@@ -110,8 +172,21 @@ function applyOp(child) {
     renderStatus();
     return;
   }
-  flushSave();                             // send ours before the document moves under us
-  quill.updateContents(op.ops, 'api');     // updateContents carries the caret along
+  // Decrypting an op takes a tick, so ops queue: they have to reach the editor
+  // in the order the server put them in, or the positions they carry mean
+  // nothing.
+  applyChain = applyChain.then(function () {
+    flushSave();                           // send ours before the document moves under us
+    if (!op.enc) {
+      quill.updateContents(op.ops, 'api'); // updateContents carries the caret along
+      return;
+    }
+    return openOp(op.enc).then(function (ops) {
+      quill.updateContents(ops, 'api');
+    });
+  }).catch(function (err) {
+    console.error('could not apply an op', err);
+  });
   statusMessage = '';
   renderStatus();
 }
@@ -123,9 +198,16 @@ function flushSave() {
   pendingDelta = null;
   statusMessage = 'Saving ...';
   renderStatus();
-  // The server's clock goes into the op, so every client agrees on when the
-  // document last changed no matter what its own clock says.
-  opsRef.push({ ops: delta.ops, by: clientId, at: firebase.database.ServerValue.TIMESTAMP }).then(function () {
+  // Waiting for `ready` first means a keystroke made in the milliseconds before
+  // the key finished loading is still encrypted with it.
+  var op = { by: clientId, at: firebase.database.ServerValue.TIMESTAMP };
+  ready.then(function () {
+    return CRYPTO_KEY ? sealOp(delta.ops).then(function (sealed) { op.enc = sealed; }) : (op.ops = delta.ops);
+  }).then(function () {
+    // The server's clock goes into the op, so every client agrees on when the
+    // document last changed no matter what its own clock says.
+    return opsRef.push(op);
+  }).then(function () {
     statusMessage = 'Saved';
     renderStatus();
   }).catch(function (err) {
@@ -180,6 +262,12 @@ function newNote() {
   window.location.hash = newSlug();
 }
 
+// A pad whose key is in the link and nowhere else. Lose the link and the note
+// is gone: there is nothing to recover it from.
+function newPrivateNote() {
+  window.location.hash = newSlug() + ',' + newKey();
+}
+
 function copyLink() {
   var url = window.location.href;
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -195,11 +283,17 @@ function copyLink() {
 
 function doThese() {
   renderStatus();
-  readMessage();
-  getTextChange();
-  watchPresence();
   document.getElementById('newNote').onclick = newNote;
+  document.getElementById('newPrivateNote').onclick = newPrivateNote;
   document.getElementById('copyLink').onclick = copyLink;
+  // With a key in the link, nothing may be read or written before it is loaded.
+  ready.then(function () {
+    readMessage();
+    getTextChange();
+    watchPresence();
+  }).catch(function (err) {
+    console.error('pad not opened', err);
+  });
 }
 
 document.addEventListener("DOMContentLoaded", doThese());
