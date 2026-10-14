@@ -90,9 +90,16 @@ function readMessage() {
 
 function applyOp(child) {
   var op = child.val();
-  if (!op || op.by === clientId) return;   // our own op, already applied as it was typed
+  if (!op) return;
+  if (op.at) lastEdited = op.at;
+  if (op.by === clientId) {                // our own op, already applied as it was typed
+    renderStatus();
+    return;
+  }
   flushSave();                             // send ours before the document moves under us
   quill.updateContents(op.ops, 'api');     // updateContents carries the caret along
+  statusMessage = '';
+  renderStatus();
 }
 
 function flushSave() {
@@ -100,11 +107,47 @@ function flushSave() {
   if (!pendingDelta) return;
   var delta = pendingDelta;
   pendingDelta = null;
-  opsRef.push({ ops: delta.ops, by: clientId }).catch(function (err) {
+  statusMessage = 'Saving ...';
+  renderStatus();
+  // The server's clock goes into the op, so every client agrees on when the
+  // document last changed no matter what its own clock says.
+  opsRef.push({ ops: delta.ops, by: clientId, at: firebase.database.ServerValue.TIMESTAMP }).then(function () {
+    statusMessage = 'Saved';
+    renderStatus();
+  }).catch(function (err) {
     // Firebase rejects a write over 1 MB and the free tier stops at its quota;
     // without this the note keeps taking edits and quietly stops saving.
     console.error('save failed', err);
-    M.toast({ html: 'Not saved - check your connection' });
+    statusMessage = 'Not saved - check your connection';
+    M.toast({ html: statusMessage });
+    renderStatus();
+  });
+}
+
+var statusMessage = '';
+var lastEdited = null;
+var here = 1;
+
+function renderStatus() {
+  var parts = [];
+  if (statusMessage) parts.push(statusMessage);
+  if (lastEdited) parts.push('edited ' + new Date(lastEdited).toLocaleTimeString());
+  if (here > 1) parts.push(here + ' people here');
+  document.getElementById('padStatus').textContent = parts.join(' · ') || 'Saved as you type.';
+}
+
+// Who else is in this pad. onDisconnect() is the point: a tab that closes, or
+// loses its network, drops its own flag without anyone having to clean up.
+function watchPresence() {
+  var myPresence = padRef.child('presence').child(clientId);
+  database.ref('.info/connected').on('value', function (snap) {
+    if (snap.val() !== true) return;
+    myPresence.onDisconnect().remove();
+    myPresence.set(true);
+  });
+  padRef.child('presence').on('value', function (snap) {
+    here = snap.numChildren();
+    renderStatus();
   });
 }
 
@@ -137,8 +180,10 @@ function copyLink() {
 }
 
 function doThese() {
+  renderStatus();
   readMessage();
   getTextChange();
+  watchPresence();
   document.getElementById('newNote').onclick = newNote;
   document.getElementById('copyLink').onclick = copyLink;
 }
