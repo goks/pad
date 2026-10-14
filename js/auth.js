@@ -67,11 +67,13 @@ var RESERVED = { 'index.html': 1, '404.html': 1, 'logo.png': 1, 'logo1.png': 1, 
 var hashParts = window.location.hash.slice(1).split(',');
 var linkKey = hashParts[1] || '';          // set on a pad whose text is encrypted
 var key = hashParts[0] || pathSlug();
+// The check has to cover the hash too: the 404 page hands a path over in the
+// hash, so a crawler asking for /pad/404.html minted a pad called 404-html.
+if (RESERVED[String(key).toLowerCase()]) key = '';
 
 function pathSlug() {
   var segments = window.location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
-  var last = segments.length > 1 ? segments[segments.length - 1] : '';
-  return RESERVED[last.toLowerCase()] ? '' : last;
+  return segments.length > 1 ? segments[segments.length - 1] : '';
 }
 
 try {
