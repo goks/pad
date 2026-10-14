@@ -12,10 +12,6 @@
     min-height: 60vh;
 }
 
-.spinner-custom-color {
-    border-color: #f1e6e5;
-}
-
 .loader {
     position: absolute;
     margin: auto;
@@ -23,23 +19,6 @@
     bottom: 50vh;
     left: 0;
     right: 0;
-}
-
-.icon-block {
-    padding: 0 15px;
-}
-
-.icon-block .material-icons {
-    font-size: inherit;
-}
-
-.settingsList label {
-    color: #fff;
-}
-
-.settingsList label::before {
-    border-color: #fff;
-    border-right-color: #fff;
 }
 
 textarea {

@@ -55,9 +55,6 @@ if (window.location.pathname.indexOf(key) === -1 && window.location.hash.slice(1
   history.replaceState(null, null, BASE + key);
 }
 
-var richTextContent = document.getElementById('#textAreaContainer')
-var checkbox = document.getElementById("autoParent");
-checkbox.checked = true;
 // Get a reference to the database service
 var database = firebase.database();
 var padRef = database.ref(key);
@@ -111,24 +108,6 @@ function flushSave() {
   });
 }
 
-function checkcheck() {
-  if (checkbox.checked) {
-    checkbox.checked = false;
-    return database.ref(key).on('value', function (content) {
-      console.log("auto update set");
-      if (content.val().Content) {
-        // textContent.value = content.val().Content;
-        // richTextContent.value = content.val().Content;
-      }
-    });
-  }
-  else {
-    checkbox.checked = true;
-    console.log("auto update unset");
-    return database.ref(key).off();
-  }
-}
-
 function getTextChange() {
   return quill.on('text-change', function (delta, oldDelta, source) {
     if (source !== 'user') return;   // the initial load, or somebody else's op
@@ -139,9 +118,6 @@ function getTextChange() {
     saveTimer = setTimeout(flushSave, SAVE_DELAY_MS);
   });
 }
-
-//checkbox.addEventListener('change',checkcheck());
-// checkbox.onclick = checkAuto();
 
 function newNote() {
   window.location.href = BASE + newSlug();
