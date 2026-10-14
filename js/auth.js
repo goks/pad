@@ -53,6 +53,8 @@ function readMessage() {
   return database.ref(key).on('value', function (content) {
     document.getElementById('spinner').style.visibility = 'visible'
     if(!content.val()){
+      // an empty pad still has a starting state; without this the first edit is dropped by saveData
+      currentContents = quill.getContents()
       console.log('first user')
       document.getElementById('spinner').style.visibility = 'hidden'
       return
@@ -60,6 +62,7 @@ function readMessage() {
     content = content.val().Content
     if (!currentContents) {
       console.log("received promise -- readmsg  -- SET");
+      currentContents = content
       currentDelta = quill.setContents(content)
       document.getElementById('spinner').style.visibility = 'hidden'
       return
