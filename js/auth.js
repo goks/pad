@@ -22,11 +22,20 @@ connectedRef.on("value", function (snap) {
   }
 });
 
-var key = window.location.href;
-key = key.split('/');
-key = key[key.length - 1];
-key = key.split('.');
-key = key[0];
+// The pad is the last path segment of the URL. Firebase keys cannot contain
+// . # [ ] $ / : a '#' or a bracket used to make every read and write throw, a
+// path '/' silently created a nested node, and the old split('.') made
+// /pad/notes.v2 and /pad/notes the same pad. Normalise instead of guessing.
+var key = "";
+if (window.location.pathname.split('/').filter(Boolean).length > 1) {
+  key = window.location.pathname.replace(/\/+$/, '').split('/').pop();
+}
+try {
+  key = decodeURIComponent(key);
+} catch (e) {
+  key = "";
+}
+key = key.replace(/[.#\[\]$\/\s]/g, '-');
 if (key == "")
 key = "default";
 console.log('key=' + key);
