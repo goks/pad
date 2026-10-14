@@ -37,8 +37,23 @@ try {
 }
 key = key.replace(/[.#\[\]$\/\s]/g, '-');
 if (key == "")
-key = "default";
+key = newSlug();
 console.log('key=' + key);
+
+// A pad is its URL. A note that just got a name shows it in the address bar,
+// ready to copy, and a name nobody can guess is what keeps a new note out of
+// reach of someone trying the obvious ones.
+function newSlug() {
+  var random = (window.crypto && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g, '') : Math.random().toString(36).slice(2, 10);
+  return random.slice(0, 8);
+}
+
+// Where the app is served from, read off this script's own URL, so the same
+// code works at goks.github.io/pad/ and at the root of a domain.
+var BASE = document.currentScript ? document.currentScript.src.replace(/(js\/)?auth\.js.*$/, '') : window.location.pathname;
+if (window.location.pathname.indexOf(key) === -1 && window.location.hash.slice(1) !== key) {
+  history.replaceState(null, null, BASE + key);
+}
 
 var richTextContent = document.getElementById('#textAreaContainer')
 var checkbox = document.getElementById("autoParent");
@@ -128,9 +143,28 @@ function getTextChange() {
 //checkbox.addEventListener('change',checkcheck());
 // checkbox.onclick = checkAuto();
 
+function newNote() {
+  window.location.href = BASE + newSlug();
+}
+
+function copyLink() {
+  var url = window.location.href;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function () {
+      M.toast({ html: 'Link copied' });
+    }, function () {
+      window.prompt('Copy this link', url);
+    });
+  } else {
+    window.prompt('Copy this link', url);
+  }
+}
+
 function doThese() {
   readMessage();
   getTextChange();
+  document.getElementById('newNote').onclick = newNote;
+  document.getElementById('copyLink').onclick = copyLink;
 }
 
 document.addEventListener("DOMContentLoaded", doThese());

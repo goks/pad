@@ -2,11 +2,14 @@
 Online text sharing utility
 
 ### Usage
-Visit goks.github.io/pad/< any extension > to create your online note.
+Visit goks.github.io/pad/ for a new note with a name nobody can guess, or
+goks.github.io/pad/<any name you choose> to open the note with that name.
+Everyone who opens the same address edits the same note, live.
 
 ###### Implemented using [Firebase](https://firebase.google.com/)
 
-Click [HERE](http://goks.github.io/pad/new).
+Click [HERE](https://goks.github.io/pad/) for a new note. The link button in
+the page copies the address of the note you are looking at.
 
 ## Security
 
