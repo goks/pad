@@ -69,10 +69,10 @@ anonymous write, so anyone with `curl` can write to any pad. App Check is the
 only control that says "this write came from a real browser on my site". Until
 it is enforced, the database is as open as it was in 2016.
 
-**The order matters:** the page still loads the 2016 `firebase-app.js`, which
-cannot send an App Check token. Switching enforcement on first makes every read
-and write fail for every user. Upgrade the client (4.3), watch it work (4.4),
-then enforce (4.5).
+**The order matters:** enforcement rejects every client that cannot show a token -
+reads as well as writes - so it goes last. The page is already ready: `js/auth.js`
+loads the v11 compat build and the App Check module. What is missing is the site
+key (4.3) and the console switch (4.5).
 
 ### 4.1 Get a reCAPTCHA v3 site key
 
@@ -92,51 +92,37 @@ paste the site key.
 *Reason:* this binds the provider to the app so the Realtime Database can be set
 to enforce *this* app's tokens and nothing else.
 
-### 4.3 Upgrade the client to the modular SDK, with App Check initialised
+### 4.3 Put the site key in the page
 
-The 2016 build cannot do this. `index.html`'s tags become one module script:
+Open `js/auth.js`, top of the file:
 
-```html
-<script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
-  import { getDatabase, ref, child, push, onChildAdded, onDisconnect,
-           serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
-  import { initializeAppCheck, ReCaptchaV3Provider }
-    from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app-check.js';
-
-  const app = initializeApp(config);
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('YOUR_SITE_KEY'),
-    isTokenAutoRefreshEnabled: true
-  });
-  const db = getDatabase(app);
-</script>
+```js
+var APP_CHECK_SITE_KEY = '';   // <- paste the reCAPTCHA v3 site key here
 ```
 
-and `js/auth.js` becomes a module too (`<script type="module" src="js/auth.js">`)
-- a module cannot use another module's imports, so the whole file moves or none
-of it does. The call-by-call mapping:
+That is the whole client change, and it is already in the repo: the page loads the
+v11.10.0 **compat** build (`firebase-app-compat.js`, `firebase-database-compat.js`,
+`firebase-app-check-compat.js`), which keeps the `firebase.*` API these files
+were written against, and `firebase.appCheck()` is already called right after
+`initializeApp`, before any database access.
 
-| 2016 build | modular SDK |
-|---|---|
-| `firebase.database()` | `getDatabase(app)` |
-| `database.ref(key)` | `ref(db, key)` |
-| `padRef.child('ops')` | `child(padRef, 'ops')` |
-| `ref.on('child_added', cb)` | `onChildAdded(ref, cb)` |
-| `opsRef.push(op)` | `push(opsRef, op)` |
-| `firebase.database.ServerValue.TIMESTAMP` | `serverTimestamp()` |
-| `presenceRef.onDisconnect().remove()` | `onDisconnect(presenceRef).remove()` |
-| `snap.exists()` / `.val()` / `.numChildren()` | unchanged |
+*Reason for compat, not modular:* the modular ESM build splits into a module
+graph - one request per module - and this project has no bundler. Compat is
+three files with the API the app already uses.
 
-*Reason:* the modern build is the only one that can attach an App Check token,
-and it is the only one that still gets security fixes. Cost: first load goes
-from 48 KB to 80 KB gzipped (app 23 + database 49 + app-check 8) plus
-reCAPTCHA's own scripts, cached afterwards.
+*Reason it has to be a build that can do it at all:* the 2016 `firebase-app.js`
+cannot attach an App Check token, so with enforcement on it would be rejected
+like any other bot.
 
-*Testing locally:* the module refuses to run its check on plain http unless the
-page is on `localhost`. Register a debug token (App Check -> the app -> *Manage
-debug tokens*) and set `self.FIREBASE_APPCHECK_DEBUG_TOKEN = true` before init,
-or your local edits will be rejected.
+*Cost:* SDK 48 -> 68 KB gzipped. The real price is reCAPTCHA: with App Check
+switched on, Google's scripts load too - measured at a few hundred KB
+uncompressed on the first visit, cached afterwards. That is the honest trade for
+this step, and it is why enforcement is optional.
+
+*Testing locally:* the page sets its own debug token on `localhost` and
+`127.0.0.1` (it prints the token in the console). Add that token under App Check
+-> the app -> *Manage debug tokens*, or your local writes are rejected once
+enforcement is on.
 
 ### 4.4 Watch it work, do not enforce yet
 
